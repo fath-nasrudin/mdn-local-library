@@ -23,7 +23,7 @@ authorSchema.virtual('name')
 
 authorSchema.virtual('url')
   .get(function () {
-    return `catalog/author/${this._id}`;
+    return `/catalog/author/${this._id}`;
   });
 
 authorSchema.virtual('date_of_birth_formatted')

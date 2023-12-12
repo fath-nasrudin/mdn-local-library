@@ -1,4 +1,5 @@
 const Genre = require("../models/genre.model");
+const Book = require('../models/book.model');
 const asyncHandler = require("express-async-handler");
 
 // Display list of all Genre.
@@ -13,7 +14,28 @@ exports.genre_list = asyncHandler(async (req, res, next) => {
 
 // Display detail page for a specific Genre.
 exports.genre_detail = asyncHandler(async (req, res, next) => {
-  res.send(`NOT IMPLEMENTED: Genre detail: ${req.params.id}`);
+  const { id } = req.params;
+
+  const [
+    genre,
+    booksInGenre
+  ] = await Promise.all([
+    Genre.findById(id),
+    Book.find({ genre: id }, 'title summary').sort({ title: 1 }),
+  ])
+
+  // No results
+  if (!genre) {
+    const err = new Error('Genre not found');
+    err.status = 404;
+    return next(err);
+  }
+
+  res.render('genre_detail', {
+    title: 'Genre Detail',
+    genre,
+    genre_books: booksInGenre
+  })
 });
 
 // Display Genre create form on GET.

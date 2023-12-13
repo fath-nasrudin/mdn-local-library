@@ -109,10 +109,74 @@ exports.bookinstance_delete_post = asyncHandler(async (req, res, next) => {
 
 // Display BookInstance update form on GET.
 exports.bookinstance_update_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: BookInstance update GET");
+
+  const [bookinstance, allBooks] = await Promise.all([
+    BookInstance.findById(req.params.id),
+    Book.find({}, 'title').sort({ title: 1 })]);
+
+  if (!bookinstance) {
+    const err = new Error('Book Instance not found');
+    err.status = 404;
+    return next(err);
+  }
+
+  res.render('bookinstance_form', {
+    title: 'Update BookInstance',
+    book_list: allBooks,
+    selected_book: bookinstance.book,
+    bookinstance,
+  })
 });
 
 // Handle bookinstance update on POST.
-exports.bookinstance_update_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: BookInstance update POST");
-});
+exports.bookinstance_update_post = [
+  // validate and sanitize fields
+  body('book', 'Book must be specified')
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+
+  body('imprint', 'Imprint must be specified')
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+
+  body('status').escape(),
+
+  body('due_back', 'Invalid date')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .toDate(),
+
+  asyncHandler(async (req, res, next) => {
+    const [bookinstance, allBooks] = await Promise.all([
+      BookInstance.findById(req.params.id),
+      Book.find({}, 'title').sort({ title: 1 })]);
+
+    if (!bookinstance) {
+      const err = new Error('Book Instance not found');
+      err.status = 404;
+      return next(err);
+    }
+
+    // handle validation errors
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      res.render('bookinstance_form', {
+        title: 'Update BookInstance',
+        book_list: allBooks,
+        selected_book: bookinstance.book,
+        bookinstance,
+      })
+      return;
+    }
+
+    const updatedBookInstance = await BookInstance.findByIdAndUpdate(req.params.id, req.body);
+    if (!updatedBookInstance) {
+      const err = new Error('Book Instance not found');
+      err.status = 404;
+      return next(err);
+    }
+    res.redirect(updatedBookInstance.url);
+  }),
+];

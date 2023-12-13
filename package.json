@@ -1,6 +1,9 @@
 {
   "name": "22-02-express-local-library",
   "version": "0.0.0",
+  "engines": {
+    "node": ">=18.13.0"
+  },
   "private": true,
   "scripts": {
     "start": "node ./bin/www",

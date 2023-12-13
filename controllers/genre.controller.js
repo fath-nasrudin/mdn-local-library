@@ -129,10 +129,39 @@ exports.genre_delete_post = asyncHandler(async (req, res, next) => {
 
 // Display Genre update form on GET.
 exports.genre_update_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Genre update GET");
+  const genre = await Genre.findById(req.params.id);
+  res.render('genre_form', {
+    title: 'Update Genre',
+    genre,
+  })
 });
 
 // Handle Genre update on POST.
-exports.genre_update_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Genre update POST");
-});
+exports.genre_update_post = [
+  // validate and sanitize the name fields
+  body('name', 'Genre name must contain at least 3 characters')
+    .trim()
+    .isLength({ min: 3 })
+    .escape(),
+
+  asyncHandler(async (req, res, next) => {
+    // i dont know which is better when updating file,
+    // 1. find request, and save request (2 request)
+    // 2. findAndUpdate request (1 request)
+    // 3. or there are any other options?
+    // for now i will use findAndUpdate option
+    const updateData = {
+      name: req.body.name
+    }
+
+    const successUpdateGenre = await Genre.findByIdAndUpdate(req.params.id, updateData)
+
+    if (!successUpdateGenre) {
+      const err = new Error('Genre not found');
+      err.status = 404;
+      return next(err);
+    }
+
+    res.redirect(successUpdateGenre.url);
+  }),
+];

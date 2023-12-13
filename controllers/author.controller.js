@@ -133,10 +133,70 @@ exports.author_delete_post = asyncHandler(async (req, res, next) => {
 
 // Display Author update form on GET.
 exports.author_update_get = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Author update GET");
+  const author = await Author.findById(req.params.id);
+
+  // handle if author with specified id not found
+  if (!author) {
+    const err = new Error('Author not found');
+    err.status = 404;
+    return next(err);
+  }
+
+  // render form with author data to be populated
+  res.render('author_form', {
+    title: 'Update Author',
+    author,
+  })
 });
 
 // Handle Author update on POST.
-exports.author_update_post = asyncHandler(async (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Author update POST");
-});
+exports.author_update_post = [
+  // validation and sanitization
+  body('first_name')
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage('First name must be specified.')
+    .isAlphanumeric()
+    .withMessage('First name has non-alphanumeric characters.'),
+
+  body('family_name')
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage('Family name must be specified.')
+    .isAlphanumeric()
+    .withMessage('Family name has non-alphanumeric characters.'),
+
+  body('date_of_birth', 'Invalid date of birth')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .toDate(),
+
+  // process data
+  asyncHandler(async (req, res, next) => {
+    // redirect to form with data if validation failed
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      res.render('author_form', {
+        author: req.body,
+        errors: validationErrors.array(),
+      })
+      return;
+    }
+
+
+    const updatedAuthor = await Author
+      .findByIdAndUpdate(req.params.id, req.body);
+
+    // if author not found
+    if (!updatedAuthor) {
+      const err = new Error('Author not found');
+      err.status = 404;
+      next(err);
+      return;
+    }
+
+    res.redirect(updatedAuthor.url);
+  }),
+];

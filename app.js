@@ -4,12 +4,17 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const catalogRouter = require('./routes/catalog');
 
 var app = express();
+const limiter = rateLimit({
+  windowsMS: 1 * 60 * 1000,
+  max: 20,
+})
 
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', false);
@@ -33,7 +38,7 @@ app.use(helmet.contentSecurityPolicy({
     "srcipt-src": ["self", "code.jquery.com", "cdn.jsdelivr.net"]
   }
 }))
-
+app.use(limiter);
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
